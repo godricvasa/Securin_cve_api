@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVE Data</title>
+    <style>
+    
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .pagination a {
+            padding: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+        .pagination a:hover {
+            background-color: #f2f2f2;
+        }
+    </style>
+   
+</head>
+<body>
+<h1><%=id%></h1>
+<h3>Description:</h4>
+    <p><%=desc%></p>
+    <h1>CVSS V2 Metrics</h1>
+     <pre><b>Severity:</b> <%=Severity%></pre >
+        <pre><b>score:</b> <%=score%></pre >
+            <pre><b>vectorString</b> <%=vectorString%></pre >
+    
+<table id="cveTable">
+    <thead>
+        <tr>
+            <th>Access Vector</th>
+            <th>Access Complexity</th>
+            <th>Authentication</th>
+            <th>Confidentiality Impact</th>
+            <th>Integrity Impact</th>
+            <th>Availability Impact</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+        
+            <tr>
+                
+                <td><%= accessVector %></td>
+                <td><%= accessComplexity %></td>
+                <td><%= authentication%></td>
+                <td><%= confidentialityImpact %></td>
+                <td><%= integrityImpact %></td>
+                <td><%= availabilityImpact %></td>
+                
+                  
+                  
+            </tr>
+       
+    </tbody>
+</table>
+
+<h1>Scores:</h1>
+<pre><b>exploitabilityScore:</b> <%=exploitabilityScore%></pre >
+    <pre><b>impactScore:</b> <%=impactScore%></pre >
+   <h1>CPE</h1>
+        <table id="cveTable">
+            <thead>
+                <tr>
+                    <th>Criteria</th>
+                    <th>Match Criteria Id</th>
+                    <th>Vulnerable</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+              
+                
+                    <% for (let i = 0; i < criteriaArray.length; i++) { %>
+                        <tr>
+                            <td><%= criteriaArray[i] %></td>
+                            <td><%= matchCriteriaIdArray[i] %></td>
+                            <td><%= vulnerableArray[i] %></td>
+                        </tr>
+                        
+                    <% } %>
+                    
+                      
+                      
+                
+                
+               
+            </tbody>
+        </table>        
+
+
+</div>
+</body>
+</html>

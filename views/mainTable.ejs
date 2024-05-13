@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVE Data</title>
+    <style>
+        .searchDiv{
+            margin-right: 10px;
+        }
+        .aligner{
+            display: flex;
+            flex-direction: column;
+        }
+        .aligner .div1{
+            margin-bottom: 5px;
+           display: flex;
+           gap: 15px;
+        }
+        .aligner .div2{
+            margin-bottom: 5px;
+           display: flex;
+           gap: 15px;
+        }
+        .aligner .div3{
+            margin-bottom: 5px;
+           display: flex;
+           gap: 15px;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .pagination a {
+            padding: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+        .pagination a:hover {
+            background-color: #f2f2f2;
+        }
+        .center{
+            text-align: center;
+        }
+    </style>
+   
+</head>
+<body>
+
+<table id="cveTable">
+    <thead>
+        <tr>
+            <th>CVE ID</th>
+            <th>Identifier</th>
+            <th>Published Date</th>
+            <th>Last Modified Date</th>
+            <th>Status</th>
+            <th>Score</th>
+        </tr>
+    </thead>
+    <tbody>
+        <h3>Total Records:<%=total%></h3>
+     
+        <form action="/idResult" method="get">
+            <div class="searchDiv">
+                <label for="">ID</label>
+                <input type="text" name="SearchId">
+                <button type="submit">Search</button>
+            </div>
+            
+        </form>
+       
+        <form action="/cves/list" method="get">
+            <h3>Filter</h3>
+            <div class="aligner">
+                <div class="div1">
+                    <label for="perPage">Records Per Page</label>
+                    <select id="perPage" name="perPage">
+                        <option value="10">10</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                   
+               
+                </div>
+                <div class="div2">
+                    <label for="gt">score gt</label>
+                    <input type="text" id="gt" name="gt">
+                    <label for="lt">score lt</label>
+                    <input type="text" id="lt" name="lt">
+                    <label for="lm">Last Modified</label>
+                    <input type="text" name="lastModified">
+                    <label for="year">Year</label>
+                    <input type="text" id="year" name="year">
+                </div>
+                <div class="div3">
+                    <button type="submit">Apply</button>
+                </div>
+            </div>
+           
+            
+        </form>
+        <br>
+        <br>
+        <h1 class="center">CVE DATA</h1>
+         <h4>Page <%=currentPage%> of <%=totalPages%></h4>
+         
+        <% cve.forEach(cveItem => { %>
+            <tr>
+                <td><a href="/cves/list/<%= cveItem._id %>"><%= cveItem._id %></a></td>
+                <td><%= cveItem.sourceIdentifier %></td>
+                <td><%= formatDate(cveItem.published) %></td>
+                <td><%= formatDate(cveItem.lastModified) %></td>
+                <td><%= cveItem.vulnStatus %></td>
+                <td>
+                    <% if (cveItem.metrics && cveItem.metrics.cvssMetricV2 && cveItem.metrics.cvssMetricV2[0] && cveItem.metrics.cvssMetricV2[0].cvssData && cveItem.metrics.cvssMetricV2[0].cvssData.baseScore) { %>
+                      <%= cveItem.metrics.cvssMetricV2[0].cvssData.baseScore %>
+                    <% } else { %>
+                      <%= '0' %> <!-- Replace 'null' with your actual default value -->
+                    <% } %>
+                  </td>
+                  
+                  
+            </tr>
+        <% }); %>
+    </tbody>
+</table>
+
+<div class="pagination">
+    <% if(total > 15){ %>
+       
+        <% if (currentPage > 1) { %>
+            <a href="/cves/list?perPage=<%= perPage %>&year=<%= year %>&gt=<%= gt %>&lt=<%= lt %>&lastModified=<%= lastModified %>&page=1">First</a>
+            <a href="/cves/list?perPage=<%= perPage %>&year=<%= year %>&gt=<%= gt %>&lt=<%= lt %>&lastModified=<%= lastModified %>&page=<%= currentPage - 1 %>">Previous</a>
+        <% } %>
+    
+        <% for (let i = 1; i <= 5; i++) { %>
+            <a href="/cves/list?perPage=<%= perPage %>&year=<%= year %>&gt=<%= gt %>&lt=<%= lt %>&lastModified=<%= lastModified %>&page=<%= i %>" <%= i === currentPage ? 'style="font-weight: bold;"' : '' %>><%= i %></a>
+        <% } %>
+    
+        <% if (currentPage < totalPages) { %>
+            <a href="/cves/list?perPage=<%= perPage %>&year=<%= year %>&gt=<%= gt %>&lt=<%= lt %>&lastModified=<%= lastModified %>&page=<%= Number(currentPage)+1%>">Next</a>
+        <% } %>
+    <% } %>
+    
+</div>
+<script>
+   
+</script>
+</body>
+</html>

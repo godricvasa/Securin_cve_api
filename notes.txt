@@ -1,0 +1,3 @@
+i use the prototype.js to consume the api data to mongodb so i have to make incremental update there
+
+securinServer.js is the server file 
