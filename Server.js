@@ -33,7 +33,7 @@ app.get('/cves/list', async (req, res) => {
     const id = req.query.SearchId || "";
     try {
         const totalCount = await mongoose.connection.db.collection('Secure').countDocuments();
-        const totalPages = Math.ceil(totalCount / perPage);
+        // const totalPages = Math.ceil(totalCount / perPage);
         const offset = (page - 1) * perPage; 
     const query = {
           "_id":{$regex:id},
@@ -49,7 +49,9 @@ app.get('/cves/list', async (req, res) => {
        else{
          cve = await mongoose.connection.db.collection('Secure').find(query).sort({lastModified:-1}).skip(offset).limit(lastmodified).toArray();
        }
+       
       let tot = await mongoose.connection.db.collection('Secure').countDocuments(query);
+      const totalPages = Math.ceil(tot / perPage);
       res.render('mainTable', {lastModified:lastmodified,lt,gt,year,perPage,total:tot,cve, totalPages, currentPage: page,formatDate:formatDate});
     } catch (error) { 
         console.error("Error:", error); 
@@ -57,10 +59,19 @@ app.get('/cves/list', async (req, res) => {
 
 app.get("/idResult", async (req, res) => {
     const id = req.query.SearchId;
+    const perpage= 10;
+    const query={
+        "_id":{$regex:id}
+    };
+   
     const cve = await mongoose.connection.db.collection('Secure')
-        .find({_id: {$regex:id}})
+        .find(query)
+        .limit(10)
         .toArray(); 
-    res.render('mainTable', {cve, total: cve.length, totalPages: 1, currentPage: 1, formatDate: formatDate});             
+   
+        let tot = await mongoose.connection.db.collection('Secure').countDocuments(query);
+        const totalPages = Math.ceil(tot / perpage);
+    res.render('mainTable', {cve, total: tot, totalPages: totalPages,perPage:10,year:"", currentPage: 1, formatDate: formatDate,gt:0,lt:10,lastModified:-1});             
 });
 
 app.get("/cves/list/:cveid", async (req, res) => {
