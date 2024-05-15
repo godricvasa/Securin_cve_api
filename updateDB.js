@@ -3,68 +3,40 @@ const mongoose = require('mongoose');
 
 const uri = "mongodb://localhost:27017/Securin";
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+let myColl;
+mongoose.connection.on('connected', () => {
+    console.log('Connected to MongoDB');
+    myColl = mongoose.connection.db.collection('cves');
+});
 
-async function fetchUpdate (start_index=0, per_page=2000) {
-    const apiurl = "https://services.nvd.nist.gov/rest/json/cvehistory/2.0";
-    const last_date = "1999";
-    const offset = {
-        "startIndex": start_index,
-        "resultsPerPage": per_page,
-        "start date": last_date
-    };
-    try {
-        const req = await axios.get(apiurl, { params: offset });
-        // get status code 
-        const status = req.status;
-        if(status === 200) {
-            const data = req.data;
-            return {data, status};
-        } else {
-            console.log('No result');
-            return {data: {}, status};
-        }
-    } catch (error) {
-        console.error(`Error: ${error}`);
-        return {data: {}, status: error.response ? error.response.status : 'Unknown error'};
-    }
-}
+async function updateDB(offset){
+ const apiUrl = 'https://services.nvd.nist.gov/rest/json/cvehistory/2.0';
+ let off = offset;
+  try {while (true) {
+            const response = await axios.get(apiUrl, { params: {startIndex: off,resultsPerPage:1}});
+            const historyPageData = response.data;
+            const histLen = historyPageData.totalResults;
+            if(histLen!==localLen){
+                const newcount = histLen - localLen;
+                const newResponse = await axios.get(apiUrl, { params: {startIndex: newcount,resultsPerPage:localLen}});
+                const newhistoryres = newResponse.data;
+                for(let j=0;j<newcount;j++){
+                    const change = newhistoryres.cveChanges[j].change;
+                    if (newhistoryres.cveChanges[j].eventName === "CVE Rejected") {
+                        await myColl.findOneAndDelete({ id: change.cveId }) }
+                    else{ 
+const cveDetailsResponse = await axios.get(`https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${change.cveId}`);
+                        const cveDetailsResult = await cveDetailsResponse.json();
+                        console.log(cveDetailsResult.vulnerabilities[0]);
+                        const item = cveDetailsResult.vulnerabilities[0].cve;
+                        item._id = cveDetailsResult.vulnerabilities[0].id;
+                        await myColl.updateOne({ _id: cveData.id }, { $set: cveData }, { upsert: true });
+                        await new Promise(resolve => setTimeout(resolve, 100000));}}
+               localLen+=newcount;
+                console.log(`Updated DB with ${newcount} records`);} 
+        else{console.log("DB is in sync");}}}
+catch (error) {console.error("An error occurred:", error);}}
 
-async function handleUpdate() {
-    let start_index = 0;
-    const per_page = 2000;
-    while (true) {
-        const { status, data } = await fetchUpdate(start_index, per_page);
-        if (status === 200) start_index += per_page;
-        else {
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            continue;
-        }
-        if (data.resultsPerPage === 0) break;
-        for (const { change } of data.cveChanges) {
-            const cveId = change.cveId;
-            if (change.eventName === "CVE Rejected") {
-                await mongoose.connection.db.collection('Secure').deleteOne({ _id: cveId });
-            } else {
-                const cveResponse = await axios.get('https://services.nvd.nist.gov/rest/json/cves/2.0', {
-                    params: {
-                        cveId,
-                        startIndex: start_index,
-                        resultsPerPage: per_page
-                    }
-                });
-                if(cveResponse.data.vulnerabilities && cveResponse.data.vulnerabilities[0]) {
-                    const cveData = cveResponse.data.vulnerabilities[0].cve;
-                    await mongoose.connection.db.collection('Secure').updateOne({ _id: cveData.id }, { $set: cveData }, { upsert: true });
-                }
-            }      
-         }
-        }
-    }
- setInterval(handleUpdate,30*60*1000);
-
-
-
-
-
-
-
+setInterval(()=>{
+    updateDB(0),30*60*1000
+})    
