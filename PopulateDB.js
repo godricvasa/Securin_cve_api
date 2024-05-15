@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const uri = "mongodb://localhost:27017/Securin";
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
-async function getAllData(offset) {
+async function populate(offset) {
     const apiUrl = 'https://services.nvd.nist.gov/rest/json/cves/2.0';
     const resultsPerPage = 2000;
    let offset = offset;
@@ -36,7 +36,7 @@ async function getAllData(offset) {
     }
 }
 
-getAllData(0);
+populate(0);
 //data cleansing remove all the rejected cves;
 async function cleansing(){
     await mongoose.connection.db.collection('Secure').deleteMany({ vulnstatus: "Rejected" });
