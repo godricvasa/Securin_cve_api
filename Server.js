@@ -9,6 +9,12 @@ app.set('view engine', 'ejs');
 
 const uri = "mongodb://localhost:27017/Securin";
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+let myColl;
+
+mongoose.connection.on('connected', async() => {
+    console.log('Connected to MongoDB');
+    myColl = mongoose.connection.db.collection('Secure');
+});
 
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -32,8 +38,8 @@ app.get('/cves/list', async (req, res) => {
     const gt = parseFloat(req.query.gt) || 0.0;
     const id = req.query.SearchId || "";
     try {
-        const totalCount = await mongoose.connection.db.collection('Secure').countDocuments();
-        // const totalPages = Math.ceil(totalCount / perPage);
+        const totalCount = await myColl.countDocuments();
+        
         const offset = (page - 1) * perPage; 
     const query = {
           "_id":{$regex:id},
@@ -44,13 +50,12 @@ app.get('/cves/list', async (req, res) => {
         ]   
        };
        let cve;
-       if(lastmodified==-1){ cve = await mongoose.connection.db.collection('Secure').find(query).sort({published:1}).skip(offset).limit(perPage).toArray();
+       if(lastmodified==-1){ cve = await myColl.find(query).sort({published:1}).skip(offset).limit(perPage).toArray();
        }
        else{
-         cve = await mongoose.connection.db.collection('Secure').find(query).sort({lastModified:-1}).skip(offset).limit(lastmodified).toArray();
+         cve = await myColl.find(query).sort({lastModified:-1}).skip(offset).limit(lastmodified).toArray();
        }
-       
-      let tot = await mongoose.connection.db.collection('Secure').countDocuments(query);
+      let tot = await myColl.countDocuments(query);
       const totalPages = Math.ceil(tot / perPage);
       res.render('mainTable', {lastModified:lastmodified,lt,gt,year,perPage,total:tot,cve, totalPages, currentPage: page,formatDate:formatDate});
     } catch (error) { 
@@ -63,11 +68,8 @@ app.get("/idResult", async (req, res) => {
     const query={
         "_id":{$regex:id}
     };
-   const cve = await mongoose.connection.db.collection('Secure')
-        .find(query)
-        .limit(10)
-        .toArray(); 
-    let tot = await mongoose.connection.db.collection('Secure').countDocuments(query);
+   const cve = await myColl.find(query).limit(10).toArray(); 
+    let tot = await myColl.countDocuments(query);
         const totalPages = Math.ceil(tot / perpage);
     res.render('mainTable', {cve, total: tot, totalPages: totalPages,perPage:10,year:"", 
     currentPage: 1, formatDate: formatDate,gt:0,lt:10,lastModified:-1});             
@@ -75,7 +77,7 @@ app.get("/idResult", async (req, res) => {
 
 app.get("/cves/list/:cveid", async (req, res) => {
     const id = req.params.cveid;
-    const cve = await mongoose.connection.db.collection('Secure').findOne({_id: id});
+    const cve = await myColl.findOne({_id: id});
     
     if (!cve) {
         console.log(`CVE with ID ${id} not found`);
