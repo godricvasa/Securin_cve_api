@@ -31,72 +31,43 @@ app.get('/cves/list', async (req, res) => {
     const lt = parseFloat(req.query.lt) || 10.0;
     const gt = parseFloat(req.query.gt) || 0.0;
     const id = req.query.SearchId || "";
-   
-    console.log(year);
-   
-
-
     try {
         const totalCount = await mongoose.connection.db.collection('Secure').countDocuments();
         const totalPages = Math.ceil(totalCount / perPage);
-
-        const offset = (page - 1) * perPage; // Calculate offset based on current page
-        
-        //building queries
-  
-        const query = {
+        const offset = (page - 1) * perPage; 
+    const query = {
           "_id":{$regex:id},
           "published": {"$regex": year},
           "$or": [
             { "metrics.cvssMetricV2.cvssData.baseScore": { "$gte": gt, "$lte": lt } },
             { "metrics.cvssMetricV3.cvssData.baseScore": { "$gte": gt, "$lte": lt } }
-        ]
-          
+        ]   
        };
        let cve;
-       if(lastmodified==-1){
-         cve = await mongoose.connection.db.collection('Secure')
-        .find(query)
-        .sort({published:1})
-        .skip(offset) // Skip items based on offset
-        .limit(perPage) // Limit to 'perPage' items
-        .toArray();
+       if(lastmodified==-1){ cve = await mongoose.connection.db.collection('Secure').find(query).sort({published:1}).skip(offset).limit(perPage).toArray();
        }
        else{
-         cve = await mongoose.connection.db.collection('Secure')
-        .find(query)
-        .sort({lastModified:-1})
-        .skip(offset) // Skip items based on offset
-        .limit(lastmodified) // Limit to 'perPage' items
-        .toArray();
+         cve = await mongoose.connection.db.collection('Secure').find(query).sort({lastModified:-1}).skip(offset).limit(lastmodified).toArray();
        }
-       
-       let tot = await mongoose.connection.db.collection('Secure').countDocuments(query);
-
-         
-        res.render('mainTable', {lastModified:lastmodified,lt,gt,year,perPage,total:tot,cve, totalPages, currentPage: page,formatDate:formatDate});
+      let tot = await mongoose.connection.db.collection('Secure').countDocuments(query);
+      res.render('mainTable', {lastModified:lastmodified,lt,gt,year,perPage,total:tot,cve, totalPages, currentPage: page,formatDate:formatDate});
     } catch (error) { 
-        console.error("Error:", error);
-        res.status(500).send("Internal Server Error");
-    }
-});
+        console.error("Error:", error); 
+}});
+
 app.get("/idResult", async (req, res) => {
     const id = req.query.SearchId;
     const cve = await mongoose.connection.db.collection('Secure')
         .find({_id: {$regex:id}})
-        
-        .toArray(); // Convert cursor to array
-    res.render('mainTable', {cve, total: 1, totalPages: 1, currentPage: 1, formatDate: formatDate});             
+        .toArray(); 
+    res.render('mainTable', {cve, total: cve.length, totalPages: 1, currentPage: 1, formatDate: formatDate});             
 });
 
 app.get("/cves/list/:cveid", async (req, res) => {
-    var id = req.params.cveid;
-    
+    const id = req.params.cveid;
     const cve = await mongoose.connection.db.collection('Secure')
         .find({_id: id})
-        .toArray();
-       
-   
+        .toArray(); 
     if (cve[0] && cve[0].metrics && cve[0].metrics.cvssMetricV2 && cve[0].metrics.cvssMetricV2[0] && cve[0].metrics.cvssMetricV2[0].cvssData) {
         let accessVector = cve[0].metrics.cvssMetricV2[0].cvssData.accessVector;
         let accessComplexity = cve[0].metrics.cvssMetricV2[0].cvssData.accessComplexity;
@@ -111,7 +82,6 @@ app.get("/cves/list/:cveid", async (req, res) => {
         let  = cve[0].metrics.cvssMetricV2[0].baseSeverity;
         let exploitabilityScore = cve[0].metrics.cvssMetricV2[0].exploitabilityScore;
         let impactScore = cve[0].metrics.cvssMetricV2[0].impactScore;
-
         let nodes = cve[0].configurations[0].nodes;
         let criteriaArray = [];
         let matchCriteriaIdArray = [];
