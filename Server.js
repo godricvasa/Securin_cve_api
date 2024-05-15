@@ -63,65 +63,78 @@ app.get("/idResult", async (req, res) => {
     const query={
         "_id":{$regex:id}
     };
-   
-    const cve = await mongoose.connection.db.collection('Secure')
+   const cve = await mongoose.connection.db.collection('Secure')
         .find(query)
         .limit(10)
         .toArray(); 
-   
-        let tot = await mongoose.connection.db.collection('Secure').countDocuments(query);
+    let tot = await mongoose.connection.db.collection('Secure').countDocuments(query);
         const totalPages = Math.ceil(tot / perpage);
-    res.render('mainTable', {cve, total: tot, totalPages: totalPages,perPage:10,year:"", currentPage: 1, formatDate: formatDate,gt:0,lt:10,lastModified:-1});             
+    res.render('mainTable', {cve, total: tot, totalPages: totalPages,perPage:10,year:"", 
+    currentPage: 1, formatDate: formatDate,gt:0,lt:10,lastModified:-1});             
 });
 
 app.get("/cves/list/:cveid", async (req, res) => {
     const id = req.params.cveid;
-    const cve = await mongoose.connection.db.collection('Secure')
-        .find({_id: id})
-        .toArray(); 
-    if (cve[0] && cve[0].metrics && cve[0].metrics.cvssMetricV2 && cve[0].metrics.cvssMetricV2[0] && cve[0].metrics.cvssMetricV2[0].cvssData) {
-        let accessVector = cve[0].metrics.cvssMetricV2[0].cvssData.accessVector;
-        let accessComplexity = cve[0].metrics.cvssMetricV2[0].cvssData.accessComplexity;
-        let authentication = cve[0].metrics.cvssMetricV2[0].cvssData.authentication;
-        let confidentialityImpact = cve[0].metrics.cvssMetricV2[0].cvssData.confidentialityImpact;
-        let integrityImpact = cve[0].metrics.cvssMetricV2[0].cvssData.integrityImpact;
-        let availabilityImpact = cve[0].metrics.cvssMetricV2[0].cvssData.availabilityImpact;
-        let desc = cve[0].descriptions[0].value;
-        let Severity = cve[0].metrics.cvssMetricV2[0].baseSeverity;
-        let score = cve[0].metrics.cvssMetricV2[0].cvssData.baseScore;
-        let vectorString = cve[0].metrics.cvssMetricV2[0].cvssData.vectorString;
-        let  = cve[0].metrics.cvssMetricV2[0].baseSeverity;
-        let exploitabilityScore = cve[0].metrics.cvssMetricV2[0].exploitabilityScore;
-        let impactScore = cve[0].metrics.cvssMetricV2[0].impactScore;
-        let nodes = cve[0].configurations[0].nodes;
-        let criteriaArray = [];
-        let matchCriteriaIdArray = [];
-        let vulnerableArray = [];
-        
-        for (let i = 0; i < nodes.length; i++) {
-          let cpeMatches = nodes[i].cpeMatch;
-          for (let j = 0; j < cpeMatches.length; j++) {
-            criteriaArray.push(cpeMatches[j].criteria);
-            matchCriteriaIdArray.push(cpeMatches[j].matchCriteriaId);
-            vulnerableArray.push(cpeMatches[j].vulnerable);
-          }
-        }
-        let cpeLength = criteriaArray.length;
-        console.log(cpeLength);
-        
-        // console.log(`Criteria Array: ${criteriaArray}`);
-        // console.log(`Match Criteria ID Array: ${matchCriteriaIdArray}`);
-        // console.log(`Vulnerable Array: ${vulnerableArray}`);
-        
-        res.render('subTable', {id,accessVector,accessComplexity,authentication,confidentialityImpact,integrityImpact,availabilityImpact,desc,Severity,score,vectorString,exploitabilityScore,impactScore,criteriaArray, matchCriteriaIdArray,vulnerableArray,cpeLength});
-
-        
-       
-    } else {
-        console.log('baseScore does not exist');
+    const cve = await mongoose.connection.db.collection('Secure').findOne({_id: id});
+    
+    if (!cve) {
+        console.log(`CVE with ID ${id} not found`);
+        return res.status(404).send('CVE not found');
     }
-   
-   
+    
+    let accessVector, accessComplexity, authentication, confidentialityImpact, integrityImpact, availabilityImpact, desc, Severity, score, vectorString, exploitabilityScore, impactScore, nodes;
+    let criteriaArray = [], matchCriteriaIdArray = [], vulnerableArray = [], cpeLength = 0;
+    
+    if (cve.metrics && cve.metrics.cvssMetricV2 && cve.metrics.cvssMetricV2[0] && cve.metrics.cvssMetricV2[0].cvssData) {
+        const metric = cve.metrics.cvssMetricV2[0].cvssData;
+        accessVector = metric.accessVector;
+        accessComplexity = metric.accessComplexity;
+        authentication = metric.authentication;
+        confidentialityImpact = metric.confidentialityImpact;
+        integrityImpact = metric.integrityImpact;
+        availabilityImpact = metric.availabilityImpact;
+        desc = cve.descriptions[0].value;
+        Severity = cve.metrics.cvssMetricV2[0].baseSeverity;
+        score = metric.baseScore;
+        vectorString = metric.vectorString;
+        exploitabilityScore = cve.metrics.cvssMetricV2[0].exploitabilityScore;
+        impactScore = cve.metrics.cvssMetricV2[0].impactScore;
+        if(cve.configurations){
+            nodes = cve.configurations[0].nodes;
+        }
+       
+    } else if (cve.metrics && cve.metrics.cvssMetricV31 && cve.metrics.cvssMetricV31[0] && cve.metrics.cvssMetricV31[0].cvssData) {
+        const metric = cve.metrics.cvssMetricV31[0].cvssData;
+        accessVector = metric.attackVector;
+        accessComplexity = metric.attackComplexity;
+        authentication = metric.privilegesRequired;
+        confidentialityImpact = metric.confidentialityImpact;
+        integrityImpact = metric.integrityImpact;
+        availabilityImpact = metric.availabilityImpact;
+        desc = cve.descriptions[0].value;
+        Severity = metric.baseSeverity;
+        score = metric.baseScore;
+        vectorString = metric.vectorString;
+        exploitabilityScore = cve.metrics.cvssMetricV31[0].exploitabilityScore;
+        impactScore = cve.metrics.cvssMetricV31[0].impactScore;
+        if(cve.configurations){
+            nodes = cve.configurations[0].nodes;
+        }
+    }
+
+    if (nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+            let cpeMatches = nodes[i].cpeMatch;
+            for (let j = 0; j < cpeMatches.length; j++) {
+                criteriaArray.push(cpeMatches[j].criteria);
+                matchCriteriaIdArray.push(cpeMatches[j].matchCriteriaId);
+                vulnerableArray.push(cpeMatches[j].vulnerable);
+            }
+        }
+        cpeLength = criteriaArray.length;
+    }
+    
+    res.render('subTable', { id, accessVector, accessComplexity, authentication, confidentialityImpact, integrityImpact, availabilityImpact, desc, Severity, score, vectorString, exploitabilityScore, impactScore, criteriaArray, matchCriteriaIdArray, vulnerableArray, cpeLength });
 });
 
 
