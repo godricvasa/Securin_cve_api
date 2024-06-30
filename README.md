@@ -6,9 +6,9 @@ Api to fetch data from cve api and visualize it
   git clone https://github.com/godricvasa/Securin_cve_api 
    ```
 ## Setup command
-    ```bash
+  ```bash
     npm install
-    ```
+  ```
 ## Run command : 
 ```bash
 node server.js
